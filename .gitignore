@@ -1,0 +1,7 @@
+responses/
+venv/
+.idea/
+**/__pycache__/
+
+ex*.py
+.env*
