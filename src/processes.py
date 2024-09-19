@@ -45,10 +45,10 @@ class XMLMessageProcessor:
 
             xml_string_content = self.gcp_service.download_xml(destination)
             logging.info(f"Step 3 | Content of String XML")
-            root = self.xml_service.string_to_xml(xml_string_content)
+            root = XMLService.string_to_xml(xml_string_content)
 
             updated_root = xml_operation(root, data)
-            updated_xml_string_content = self.xml_service.xml_to_string(updated_root)
+            updated_xml_string_content = XMLService.xml_to_string(updated_root)
             logging.info(f"Step 4 | Updated XML content")
 
             url = self.gcp_service.upload_xml(updated_xml_string_content, destination)
@@ -65,17 +65,14 @@ class XMLMessageProcessor:
             data = CreateUserSchema.model_validate_json(payload)
             logging.info(f"Step 2 | Pydantic model converted from payload")
 
-            xml_service = self.xml_service
-            root = xml_service.create_user_xml(data)
+            root = self.xml_service.create_user_xml(data)
             logging.info(f"Step 3 | Root of created xml")
 
             xml_content = XMLService.xml_to_string(root)
             logging.info(f"Step 4 | Content of XML")
 
-            gcp_service = self.gcp_service
             destination = f"{settings.PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION}/{data.merchant_id}/products.xml"
-            url = gcp_service.upload_xml(xml_content, destination)
-
+            url = self.gcp_service.upload_xml(xml_content, destination)
             logging.info(f"Step 5 | XML uploaded successfully. URL: {url}")
 
     @process_exception_handler
