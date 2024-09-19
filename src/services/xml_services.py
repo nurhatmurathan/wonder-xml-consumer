@@ -60,15 +60,13 @@ class XMLService:
 
     def add_offers_to_xml(self, root: Element, data: "AddNewOffersSchema") -> Element:
         offers_elem = root.find("ns:offers", namespaces=self.ns)
-        if offers_elem is None:
-            offers_elem = self.create_element("offers", root)
 
         for offer_data in data.offers:
-            offer_elem = root.find(
-                f".//ns:offer[@sku='{offer_data.sku}']", namespaces=self.ns
-            )
-            if offer_elem is not None:
-                logging.warning(f"Offer with {offer_data.sku} is EXISTS")
+            if (
+                root.find(f".//ns:offer[@sku='{offer_data.sku}']", namespaces=self.ns)
+                is not None
+            ):
+                logging.warning(f"Offer with {offer_data.sku} already exists")
                 continue
 
             offer_elem = self.create_element("offer", offers_elem, sku=offer_data.sku)
@@ -143,11 +141,14 @@ class XMLService:
                 availabilities_elem = offer_elem.find(
                     "ns:availabilities", namespaces=self.ns
                 )
-                existing_availability_elem = availabilities_elem.find(
-                    f"ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
-                )
 
-                if existing_availability_elem is None:
+                if (
+                    availabilities_elem.find(
+                        f"ns:availability[@storeId='{data.store_id}']",
+                        namespaces=self.ns,
+                    )
+                    is None
+                ):
                     self.create_element(
                         "availability",
                         availabilities_elem,
