@@ -1,11 +1,11 @@
 # Byte-compiled / optimized Python files
 
 # local docker files
-docker-compose.yml
+/docker-compose.yml
 
 # publicher files for test consumer
-publisher_test.py
-src/publisher.py
+/publisher_test.py
+/src/publisher.py
 
 
 *.pyc
