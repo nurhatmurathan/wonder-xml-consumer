@@ -16,6 +16,10 @@ if TYPE_CHECKING:
         OfferCityPriceSchema,
         DeleteOfferSchema,
         DisablePickupSchema,
+        EnablePickupSchema,
+        SetOfferPriceSchema,
+        OfferPriceSchema,
+        SetStoreAvailabilitySchema,
     )
 
 
@@ -59,68 +63,166 @@ class XMLService:
         if offers_elem is None:
             offers_elem = self.create_element("offers", root)
 
-        for offer in data.offers:
-            offer_elem = self.create_element("offer", offers_elem, sku=offer.sku)
-            self.create_element("model", offer_elem).text = offer.model
+        for offer_data in data.offers:
+            offer_elem = root.find(
+                f".//ns:offer[@sku='{offer_data.sku}']", namespaces=self.ns
+            )
+            if offer_elem is not None:
+                logging.warning(f"Offer with {offer_data.sku} is EXISTS")
+                continue
 
-            if offer.brand:
-                self.create_element("brand", offer_elem).text = offer.brand
+            offer_elem = self.create_element("offer", offers_elem, sku=offer_data.sku)
+            self.create_element("model", offer_elem).text = offer_data.model
 
-            self._add_availabilities(offer_elem, offer.availabilities)
+            if offer_data.brand:
+                self.create_element("brand", offer_elem).text = offer_data.brand
 
-            if offer.price:
-                self.create_element("price", offer_elem).text = str(offer.price)
-            elif offer.city_prices:
-                self._add_city_prices(offer_elem, offer.city_prices)
+            self._add_availabilities(offer_elem, offer_data.availabilities)
+
+            if offer_data.price:
+                self.create_element("price", offer_elem).text = str(offer_data.price)
+            elif offer_data.city_prices:
+                self._add_city_prices(offer_elem, offer_data.city_prices)
 
         return root
 
     def _add_availabilities(
-        self, offer_elem: Element, availabilities: List["OfferAvailabilitySchema"]
+        self, offer_elem: Element, data: List["OfferAvailabilitySchema"]
     ):
         availabilities_elem = self.create_element("availabilities", offer_elem)
-        for availability in availabilities:
+        for availability_data in data:
             self.create_element(
                 "availability",
                 availabilities_elem,
-                storeId=availability.storeId,
-                available="yes" if availability.available else "no",
+                storeId=availability_data.store_id,
+                available="yes" if availability_data.available else "no",
             )
 
-    def _add_city_prices(
-        self, offer_elem: Element, city_prices: List["OfferCityPriceSchema"]
-    ):
+    def _add_city_prices(self, offer_elem: Element, data: List["OfferCityPriceSchema"]):
         city_prices_elem = self.create_element("cityprices", offer_elem)
-        for city_price in city_prices:
+        for city_price_data in data:
             price_elem = self.create_element(
-                "cityprice", city_prices_elem, cityId=city_price.cityId
+                "cityprice", city_prices_elem, cityId=city_price_data.city_id
             )
-            price_elem.text = str(city_price.price)
+            price_elem.text = str(city_price_data.price)
 
     def delete_offer_from_xml(
         self, root: Element, data: "DeleteOfferSchema"
     ) -> Element:
-        offers_to_remove = root.find(
+        offers_elem_to_remove = root.find(
             f".//ns:offer[@sku='{data.sku}']", namespaces=self.ns
         )
 
-        if offers_to_remove:
-            parent = offers_to_remove.getparent()
-            parent.remove(offers_to_remove)
-
-        else:
+        if offers_elem_to_remove is None:
             logging.warning(f"No offers found with SKU {data.sku}")
+            return root
+
+        parent = offers_elem_to_remove.getparent()
+        parent.remove(offers_elem_to_remove)
+        return root
+
+    def disable_pickup_point_xml(
+        self, root: Element, data: "DisablePickupSchema"
+    ) -> Element:
+        availabilities_elem = root.findall(
+            f".//ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+        )
+        for availability_elem in availabilities_elem:
+            parent = availability_elem.getparent()
+            parent.remove(availability_elem)
 
         return root
 
-    def disable_pickup_point(
-        self, root: Element, data: "DisablePickupSchema"
+    def enable_pickup_point_xml(
+        self, root: Element, data: "EnablePickupSchema"
     ) -> Element:
-        availabilities = root.findall(
-            f".//ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+        for sku in data.offers_sku:
+            offer_elem = root.find(f".//ns:offer[@sku='{sku}']", namespaces=self.ns)
+
+            if offer_elem is not None:
+                availabilities_elem = offer_elem.find(
+                    "ns:availabilities", namespaces=self.ns
+                )
+                existing_availability_elem = availabilities_elem.find(
+                    f"ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+                )
+
+                if existing_availability_elem is None:
+                    self.create_element(
+                        "availability",
+                        availabilities_elem,
+                        storeId=data.store_id,
+                        available="yes",
+                    )
+        return root
+
+    def set_city_prices_xml(self, root: Element, data: "SetOfferPriceSchema"):
+        offer_elem = root.find(
+            f".//ns:offer[@sku='{data.offer.sku}']", namespaces=self.ns
         )
-        for availability in availabilities:
-            availability.getparent().remove(availability)
+
+        if data.offer.price:
+            self._handle_price_existence_logic_in_set_city_prices_xml(
+                offer_elem, data.offer
+            )
+        elif data.offer.city_prices:
+            self._handle_city_price_existence_logic_in_set_city_prices_xml(
+                offer_elem, data.offer
+            )
+
+        return root
+
+    def _handle_price_existence_logic_in_set_city_prices_xml(
+        self, offer_elem: Element, data: "OfferPriceSchema"
+    ):
+        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.ns)
+        if city_prices_elem is not None:
+            offer_elem.remove(city_prices_elem)
+
+        price_elem = offer_elem.find("ns:price", namespaces=self.ns)
+        if price_elem is not None:
+            price_elem.text = str(data.price)
+        else:
+            price_elem = self.create_element("price", offer_elem).text = str(data.price)
+
+        return price_elem
+
+    def _handle_city_price_existence_logic_in_set_city_prices_xml(
+        self, offer_elem: Element, data: "OfferPriceSchema"
+    ):
+        price_elem = offer_elem.find("ns:price", namespaces=self.ns)
+        if price_elem is not None:
+            offer_elem.remove(price_elem)
+
+        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.ns)
+        if city_prices_elem is not None:
+            offer_elem.remove(city_prices_elem)
+
+        self._add_city_prices(offer_elem, data.city_prices)
+
+    def set_store_availability_xml(
+        self, root: Element, data: "SetStoreAvailabilitySchema"
+    ):
+        offer_elem = root.find(f".//ns:offer[@sku='{data.sku}']", namespaces=self.ns)
+        availabilities_elem = offer_elem.find("ns:availabilities", namespaces=self.ns)
+        existing_availability_elem = availabilities_elem.find(
+            f"ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+        )
+
+        if existing_availability_elem is None:
+            # self.create_element(
+            #     "availability",
+            #     availabilities_elem,
+            #     storeId=data.store_id,
+            #     available="yes",
+            # )
+            logging.warning(f"Store with {data.store_id} is NOT FOUND")
+            return root
+
+        if data.available:
+            existing_availability_elem.set("available", "yes")
+        else:
+            existing_availability_elem.remove(existing_availability_elem)
 
         return root
 

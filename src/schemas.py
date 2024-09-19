@@ -17,23 +17,19 @@ class DisablePickupSchema(BaseModel):
     store_id: str
 
 
-class OfferScuIdsSchema(BaseModel):
-    sku: str
-
-
 class EnablePickupSchema(BaseModel):
     merchant_id: str
     store_id: str
-    offers_sku: List[OfferScuIdsSchema]
+    offers_sku: List[str]
 
 
 class OfferAvailabilitySchema(BaseModel):
-    storeId: str
+    store_id: str
     available: bool
 
 
 class OfferCityPriceSchema(BaseModel):
-    cityId: str
+    city_id: str
     price: int
 
 
@@ -49,3 +45,21 @@ class OffersSchema(BaseModel):
 class AddNewOffersSchema(BaseModel):
     merchant_id: str
     offers: List[OffersSchema]
+
+
+class OfferPriceSchema(BaseModel):
+    sku: str
+    city_prices: Optional[List[OfferCityPriceSchema]] = None
+    price: Optional[int] = None
+
+
+class SetOfferPriceSchema(BaseModel):
+    merchant_id: str
+    offer: OfferPriceSchema
+
+
+class SetStoreAvailabilitySchema(BaseModel):
+    merchant_id: str
+    sku: str
+    store_id: str
+    available: bool
