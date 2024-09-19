@@ -1,14 +1,14 @@
 import logging
 import time
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional, List
 from lxml.etree import (
-    Element,
     fromstring,
     XMLParser,
     tostring,
 )
 
 if TYPE_CHECKING:
+    from lxml.etree import Element
     from src.schemas import (
         CreateUserSchema,
         AddNewOffersSchema,
@@ -27,14 +27,16 @@ class XMLService:
     NAMESPACE = "kaspiShopping"
     NAMESPACE_XSI = "http://www.w3.org/2001/XMLSchema-instance"
     XSI_SCHEMA_LOCATION = "http://kaspi.kz/kaspishopping.xsd"
-    ns = {"ns": NAMESPACE}
+    NS = {"ns": NAMESPACE}
     NSMAP = {
         None: NAMESPACE,
         "xsi": NAMESPACE_XSI,
     }
 
     @staticmethod
-    def create_element(tag: str, parent: Optional[Element] = None, **attrs) -> Element:
+    def create_element(
+        tag: str, parent: Optional["Element"] = None, **attrs
+    ) -> "Element":
         element = Element(
             f"{{{XMLService.NAMESPACE}}}{tag}", nsmap=XMLService.NSMAP, **attrs
         )
@@ -44,7 +46,7 @@ class XMLService:
 
         return element
 
-    def create_user_xml(self, data: "CreateUserSchema") -> Element:
+    def create_user_xml(self, data: "CreateUserSchema") -> "Element":
         root = self.create_element("kaspi_catalog")
         root.set(
             f"{{{self.NAMESPACE_XSI}}}schemaLocation",
@@ -58,12 +60,14 @@ class XMLService:
 
         return root
 
-    def add_offers_to_xml(self, root: Element, data: "AddNewOffersSchema") -> Element:
-        offers_elem = root.find("ns:offers", namespaces=self.ns)
+    def add_offers_to_xml(
+        self, root: "Element", data: "AddNewOffersSchema"
+    ) -> "Element":
+        offers_elem = root.find("ns:offers", namespaces=self.NS)
 
         for offer_data in data.offers:
             if (
-                root.find(f".//ns:offer[@sku='{offer_data.sku}']", namespaces=self.ns)
+                root.find(f".//ns:offer[@sku='{offer_data.sku}']", namespaces=self.NS)
                 is not None
             ):
                 logging.warning(f"Offer with {offer_data.sku} already exists")
@@ -85,7 +89,7 @@ class XMLService:
         return root
 
     def _add_availabilities(
-        self, offer_elem: Element, data: List["OfferAvailabilitySchema"]
+        self, offer_elem: "Element", data: List["OfferAvailabilitySchema"]
     ):
         availabilities_elem = self.create_element("availabilities", offer_elem)
         for availability_data in data:
@@ -96,7 +100,9 @@ class XMLService:
                 available="yes" if availability_data.available else "no",
             )
 
-    def _add_city_prices(self, offer_elem: Element, data: List["OfferCityPriceSchema"]):
+    def _add_city_prices(
+        self, offer_elem: "Element", data: List["OfferCityPriceSchema"]
+    ):
         city_prices_elem = self.create_element("cityprices", offer_elem)
         for city_price_data in data:
             price_elem = self.create_element(
@@ -105,10 +111,10 @@ class XMLService:
             price_elem.text = str(city_price_data.price)
 
     def delete_offer_from_xml(
-        self, root: Element, data: "DeleteOfferSchema"
-    ) -> Element:
+        self, root: "Element", data: "DeleteOfferSchema"
+    ) -> "Element":
         offers_elem_to_remove = root.find(
-            f".//ns:offer[@sku='{data.sku}']", namespaces=self.ns
+            f".//ns:offer[@sku='{data.sku}']", namespaces=self.NS
         )
 
         if offers_elem_to_remove is None:
@@ -120,10 +126,10 @@ class XMLService:
         return root
 
     def disable_pickup_point_xml(
-        self, root: Element, data: "DisablePickupSchema"
-    ) -> Element:
+        self, root: "Element", data: "DisablePickupSchema"
+    ) -> "Element":
         availabilities_elem = root.findall(
-            f".//ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+            f".//ns:availability[@storeId='{data.store_id}']", namespaces=self.NS
         )
         for availability_elem in availabilities_elem:
             parent = availability_elem.getparent()
@@ -132,20 +138,20 @@ class XMLService:
         return root
 
     def enable_pickup_point_xml(
-        self, root: Element, data: "EnablePickupSchema"
-    ) -> Element:
+        self, root: "Element", data: "EnablePickupSchema"
+    ) -> "Element":
         for sku in data.offers_sku:
-            offer_elem = root.find(f".//ns:offer[@sku='{sku}']", namespaces=self.ns)
+            offer_elem = root.find(f".//ns:offer[@sku='{sku}']", namespaces=self.NS)
 
             if offer_elem is not None:
                 availabilities_elem = offer_elem.find(
-                    "ns:availabilities", namespaces=self.ns
+                    "ns:availabilities", namespaces=self.NS
                 )
 
                 if (
                     availabilities_elem.find(
                         f"ns:availability[@storeId='{data.store_id}']",
-                        namespaces=self.ns,
+                        namespaces=self.NS,
                     )
                     is None
                 ):
@@ -157,9 +163,9 @@ class XMLService:
                     )
         return root
 
-    def set_city_prices_xml(self, root: Element, data: "SetOfferPriceSchema"):
+    def set_city_prices_xml(self, root: "Element", data: "SetOfferPriceSchema"):
         offer_elem = root.find(
-            f".//ns:offer[@sku='{data.offer.sku}']", namespaces=self.ns
+            f".//ns:offer[@sku='{data.offer.sku}']", namespaces=self.NS
         )
 
         if data.offer.price:
@@ -174,13 +180,13 @@ class XMLService:
         return root
 
     def _handle_price_existence_logic_in_set_city_prices_xml(
-        self, offer_elem: Element, data: "OfferPriceSchema"
+        self, offer_elem: "Element", data: "OfferPriceSchema"
     ):
-        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.ns)
+        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.NS)
         if city_prices_elem is not None:
             offer_elem.remove(city_prices_elem)
 
-        price_elem = offer_elem.find("ns:price", namespaces=self.ns)
+        price_elem = offer_elem.find("ns:price", namespaces=self.NS)
         if price_elem is not None:
             price_elem.text = str(data.price)
         else:
@@ -189,25 +195,25 @@ class XMLService:
         return price_elem
 
     def _handle_city_price_existence_logic_in_set_city_prices_xml(
-        self, offer_elem: Element, data: "OfferPriceSchema"
+        self, offer_elem: "Element", data: "OfferPriceSchema"
     ):
-        price_elem = offer_elem.find("ns:price", namespaces=self.ns)
+        price_elem = offer_elem.find("ns:price", namespaces=self.NS)
         if price_elem is not None:
             offer_elem.remove(price_elem)
 
-        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.ns)
+        city_prices_elem = offer_elem.find("ns:cityprices", namespaces=self.NS)
         if city_prices_elem is not None:
             offer_elem.remove(city_prices_elem)
 
         self._add_city_prices(offer_elem, data.city_prices)
 
     def set_store_availability_xml(
-        self, root: Element, data: "SetStoreAvailabilitySchema"
+        self, root: "Element", data: "SetStoreAvailabilitySchema"
     ):
-        offer_elem = root.find(f".//ns:offer[@sku='{data.sku}']", namespaces=self.ns)
-        availabilities_elem = offer_elem.find("ns:availabilities", namespaces=self.ns)
+        offer_elem = root.find(f".//ns:offer[@sku='{data.sku}']", namespaces=self.NS)
+        availabilities_elem = offer_elem.find("ns:availabilities", namespaces=self.NS)
         existing_availability_elem = availabilities_elem.find(
-            f"ns:availability[@storeId='{data.store_id}']", namespaces=self.ns
+            f"ns:availability[@storeId='{data.store_id}']", namespaces=self.NS
         )
 
         if existing_availability_elem is None:
@@ -228,10 +234,10 @@ class XMLService:
         return root
 
     @staticmethod
-    def xml_to_string(root: Element) -> str:
+    def xml_to_string(root: "Element") -> str:
         return tostring(root, encoding="UTF-8", pretty_print=True, xml_declaration=True)
 
     @staticmethod
-    def string_to_xml(xml_string: str) -> Element:
+    def string_to_xml(xml_string: str) -> "Element":
         parser = XMLParser(remove_blank_text=True, remove_comments=False)
         return fromstring(xml_string.encode(), parser=parser)

@@ -4,7 +4,6 @@ import asyncio
 from aio_pika import connect_robust
 from typing import TYPE_CHECKING
 
-
 from src.config import settings
 
 if TYPE_CHECKING:

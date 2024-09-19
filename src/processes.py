@@ -36,12 +36,12 @@ class XMLMessageProcessor:
             logging.info(f"Processing START {xml_operation}")
 
             payload = message.body.decode()
-            logging.info(f"Step 1 | Processing import: {payload}")
+            logging.info(f"Step 1 | Processing import")
 
             data = schema_class.model_validate_json(payload)
             logging.info(f"Step 2 | Pydantic model converted from payload:")
 
-            destination = f"{settings.TEST_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
+            destination = f"{settings.PROD_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
 
             xml_string_content = self.gcp_service.download_xml(destination)
             logging.info(f"Step 3 | Content of String XML")
@@ -73,10 +73,10 @@ class XMLMessageProcessor:
             logging.info(f"Step 4 | Content of XML")
 
             gcp_service = self.gcp_service
-            destination = f"{settings.TEST_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
+            destination = f"{settings.PROD_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
             url = gcp_service.upload_xml(xml_content, destination)
 
-            logging.info(f"XML uploaded successfully. URL: {url}")
+            logging.info(f"Step 5 | XML uploaded successfully. URL: {url}")
 
     @process_exception_handler
     async def process_add_new_offers_to_xml_message(self, message: "IncomingMessage"):
