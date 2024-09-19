@@ -41,7 +41,7 @@ class XMLMessageProcessor:
             data = schema_class.model_validate_json(payload)
             logging.info(f"Step 2 | Pydantic model converted from payload:")
 
-            destination = f"{settings.PROD_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
+            destination = f"{settings.PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION}/{data.merchant_id}/products.xml"
 
             xml_string_content = self.gcp_service.download_xml(destination)
             logging.info(f"Step 3 | Content of String XML")
@@ -73,7 +73,7 @@ class XMLMessageProcessor:
             logging.info(f"Step 4 | Content of XML")
 
             gcp_service = self.gcp_service
-            destination = f"{settings.PROD_GCP_STORAGE_DESTINATION}/{data.merchant_id}/products.xml"
+            destination = f"{settings.PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION}/{data.merchant_id}/products.xml"
             url = gcp_service.upload_xml(xml_content, destination)
 
             logging.info(f"Step 5 | XML uploaded successfully. URL: {url}")
