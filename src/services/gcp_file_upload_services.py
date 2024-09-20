@@ -6,18 +6,11 @@ from src.config import settings
 
 class GCPUploadService:
     def __init__(self):
-        self.bucket_name = settings.GCP_BUCKET_NAME
+        self.bucket_name = settings.PROD_GCP_BUCKET_NAME
         self.gcp_endpoint_url = settings.GCP_ENDPOINT_URL
         self.client = settings.get_boto3_client
 
     def upload_xml(self, xml_content: str, destination: str) -> str:
-        """
-        Upload XML content to the specified destination in the Google Cloud Storage bucket.
-
-        :param xml_content: The XML content to upload
-        :param destination: The destination path in the bucket
-        :return: The URL of the uploaded file
-        """
         try:
             self.client.put_object(
                 Bucket=self.bucket_name,
@@ -33,12 +26,6 @@ class GCPUploadService:
             raise exception
 
     def download_xml(self, file_name: str) -> str:
-        """
-        Download XML content from the specified file in the Google Cloud Storage bucket.
-
-        :param file_name: The path of the file in the bucket
-        :return: The content of the XML file as a string
-        """
         try:
             response = self.client.get_object(Bucket=self.bucket_name, Key=file_name)
 

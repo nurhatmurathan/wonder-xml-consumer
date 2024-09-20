@@ -1,7 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Callable
 
-
 from src.services import XMLService, GCPUploadService
 from src.schemas import (
     CreateUserSchema,
@@ -25,6 +24,7 @@ class XMLMessageProcessor:
     def __init__(self):
         self.xml_service = XMLService()
         self.gcp_service = GCPUploadService()
+        self.file_path = settings.PROD_GCP_STORAGE_XML_FILE_PATH
 
     async def process_xml_message(
         self,
@@ -41,10 +41,10 @@ class XMLMessageProcessor:
             data = schema_class.model_validate_json(payload)
             logging.info(f"Step 2 | Pydantic model converted from payload:")
 
-            destination = f"{settings.PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION}/{data.merchant_id}/products.xml"
-
+            destination = f"{self.file_path}/{data.merchant_id}/products.xml"
             xml_string_content = self.gcp_service.download_xml(destination)
             logging.info(f"Step 3 | Content of String XML")
+
             root = XMLService.string_to_xml(xml_string_content)
 
             updated_root = xml_operation(root, data)
@@ -71,7 +71,7 @@ class XMLMessageProcessor:
             xml_content = XMLService.xml_to_string(root)
             logging.info(f"Step 4 | Content of XML")
 
-            destination = f"{settings.PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION}/{data.merchant_id}/products.xml"
+            destination = f"{self.file_path}/{data.merchant_id}/products.xml"
             url = self.gcp_service.upload_xml(xml_content, destination)
             logging.info(f"Step 5 | XML uploaded successfully. URL: {url}")
 

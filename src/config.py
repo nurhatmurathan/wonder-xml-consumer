@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     RMQ_USER: str
     RMQ_PASSWORD: str
     MQ_EXCHANGE: str
-    GCP_BUCKET_NAME: str
+    PROD_GCP_BUCKET_NAME: str
+    DEV_GCP_BUCKET_NAME: str
     GCP_BUCKET_REGION: str
     GCP_ACCESS_KEY_ID: str
     GCP_SECRET_ACCESS_KEY: str
@@ -26,8 +27,8 @@ class Settings(BaseSettings):
     MQ_ENABLE_PICKUP_POINT_XML_QUEUE: str
     MQ_SET_CITY_PRICES_XML_QUEUE: str
     MQ_SET_STORE_AVAILABILITY_XML_QUEUE: str
-    PROD_GCP_STORAGE_FILE_UPLOAD_DESTINATION: str
-    TEST_GCP_STORAGE_FILE_UPLOAD_DESTINATION: str
+    PROD_GCP_STORAGE_XML_FILE_PATH: str
+    TEST_GCP_STORAGE_XML_FILE_PATH: str
 
     @property
     def get_boto3_client(self):
