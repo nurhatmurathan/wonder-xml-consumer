@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     MQ_SET_CITY_PRICES_XML_QUEUE: str
     MQ_SET_STORE_AVAILABILITY_XML_QUEUE: str
     PROD_GCP_STORAGE_XML_FILE_PATH: str
-    TEST_GCP_STORAGE_XML_FILE_PATH: str
 
     @property
     def get_boto3_client(self):
@@ -53,7 +52,7 @@ class Settings(BaseSettings):
             format="[%(asctime)s.%(msecs)03d] %(funcName)20s %(module)s:%(lineno)d %(levelname)-8s - %(message)s",
         )
 
-    model_config = SettingsConfigDict(env_file="../.env")
+    model_config = SettingsConfigDict(env_file="../.env.local")
 
 
 settings = Settings()

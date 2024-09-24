@@ -43,7 +43,7 @@ __pycache__/
 Thumbs.db
 
 # Environment-specific files
-.env
+.env.local
 .env.local
 .env.dev
 .env.prod

@@ -24,7 +24,7 @@ class XMLMessageProcessor:
     def __init__(self):
         self.xml_service = XMLService()
         self.gcp_service = GCPUploadService()
-        self.file_path = settings.PROD_GCP_STORAGE_XML_FILE_PATH
+        self.file_path = settings.GCP_STORAGE_XML_FILE_PATH
 
     async def process_xml_message(
         self,
