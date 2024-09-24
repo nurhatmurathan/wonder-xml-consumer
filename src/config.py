@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     MQ_ENABLE_PICKUP_POINT_XML_QUEUE: str
     MQ_SET_CITY_PRICES_XML_QUEUE: str
     MQ_SET_STORE_AVAILABILITY_XML_QUEUE: str
-    PROD_GCP_STORAGE_XML_FILE_PATH: str
+    GCP_STORAGE_XML_FILE_PATH: str
 
     @property
     def get_boto3_client(self):
