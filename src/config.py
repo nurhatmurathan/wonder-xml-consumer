@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     MQ_ENABLE_PICKUP_POINT_XML_QUEUE: str
     MQ_SET_CITY_PRICES_XML_QUEUE: str
     MQ_SET_STORE_AVAILABILITY_XML_QUEUE: str
+    MQ_ADD_STORES_TO_OFFER_XML_QUEUE: str
     GCP_STORAGE_XML_FILE_PATH: str
 
     @property

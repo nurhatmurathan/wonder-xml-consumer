@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         SetOfferPriceSchema,
         OfferPriceSchema,
         SetStoreAvailabilitySchema,
+        AddStoresToOfferSchema,
     )
 
 
@@ -33,30 +34,54 @@ class XMLService:
         "xsi": NAMESPACE_XSI,
     }
 
-    @staticmethod
-    def create_element(
-        tag: str, parent: Optional["Element"] = None, **attrs
+    def _create_element(
+        self, tag: str, parent: Optional["Element"] = None, **attrs
     ) -> "Element":
-        element = Element(
-            f"{{{XMLService.NAMESPACE}}}{tag}", nsmap=XMLService.NSMAP, **attrs
-        )
+        element = Element(f"{{{XMLService.NAMESPACE}}}{tag}", nsmap=self.NSMAP, **attrs)
 
         if parent is not None:
             parent.append(element)
 
         return element
 
+    def _get_or_create_offer_elem(self, root: "Element", sku: str):
+        offer_elem = root.find(f".//ns:offer[@sku='{sku}']", namespaces=self.NS)
+
+        if offer_elem is None:
+            offers_elem = root.find("ns:offers", namespaces=self.NS)
+            offer_elem = self._create_element("offer", offers_elem, sku=sku)
+            self._create_element("availabilities", offer_elem)
+
+        return offer_elem
+
+    def _get_or_create_availability_elem(
+        self, availabilities_elem: "Element", store_id: str, available: str
+    ):
+        availability_elem = availabilities_elem.find(
+            f"ns:availability[@storeId='{store_id}']", namespaces=self.NS
+        )
+
+        if availability_elem is None:
+            availability_elem = self._create_element(
+                "availability",
+                availabilities_elem,
+                storeId=store_id,
+                available=available,
+            )
+
+        return availability_elem
+
     def create_user_xml(self, data: "CreateUserSchema") -> "Element":
-        root = self.create_element("kaspi_catalog")
+        root = self._create_element("kaspi_catalog")
         root.set(
             f"{{{self.NAMESPACE_XSI}}}schemaLocation",
             f"{self.NAMESPACE} {self.XSI_SCHEMA_LOCATION}",
         )
         root.set("date", str(int(time.time())))
 
-        self.create_element("company", root).text = data.store_name
-        self.create_element("merchantid", root).text = data.merchant_id
-        self.create_element("offers", root)
+        self._create_element("company", root).text = data.store_name
+        self._create_element("merchantid", root).text = data.merchant_id
+        self._create_element("offers", root)
 
         return root
 
@@ -73,16 +98,16 @@ class XMLService:
                 logging.warning(f"Offer with {offer_data.sku} already exists")
                 continue
 
-            offer_elem = self.create_element("offer", offers_elem, sku=offer_data.sku)
-            self.create_element("model", offer_elem).text = offer_data.model
+            offer_elem = self._create_element("offer", offers_elem, sku=offer_data.sku)
+            self._create_element("model", offer_elem).text = offer_data.model
 
             if offer_data.brand:
-                self.create_element("brand", offer_elem).text = offer_data.brand
+                self._create_element("brand", offer_elem).text = offer_data.brand
 
             self._add_availabilities(offer_elem, offer_data.availabilities)
 
             if offer_data.price:
-                self.create_element("price", offer_elem).text = str(offer_data.price)
+                self._create_element("price", offer_elem).text = str(offer_data.price)
             elif offer_data.city_prices:
                 self._add_city_prices(offer_elem, offer_data.city_prices)
 
@@ -91,21 +116,20 @@ class XMLService:
     def _add_availabilities(
         self, offer_elem: "Element", data: List["OfferAvailabilitySchema"]
     ):
-        availabilities_elem = self.create_element("availabilities", offer_elem)
+        availabilities_elem = self._create_element("availabilities", offer_elem)
         for availability_data in data:
-            self.create_element(
-                "availability",
+            self._get_or_create_availability_elem(
                 availabilities_elem,
-                storeId=availability_data.store_id,
-                available="yes" if availability_data.available else "no",
+                availability_data.store_id,
+                "yes" if availability_data.available else "no",
             )
 
     def _add_city_prices(
         self, offer_elem: "Element", data: List["OfferCityPriceSchema"]
     ):
-        city_prices_elem = self.create_element("cityprices", offer_elem)
+        city_prices_elem = self._create_element("cityprices", offer_elem)
         for city_price_data in data:
-            price_elem = self.create_element(
+            price_elem = self._create_element(
                 "cityprice", city_prices_elem, cityId=city_price_data.city_id
             )
             price_elem.text = str(city_price_data.price)
@@ -141,32 +165,19 @@ class XMLService:
         self, root: "Element", data: "EnablePickupSchema"
     ) -> "Element":
         for sku in data.offers_sku:
-            offer_elem = root.find(f".//ns:offer[@sku='{sku}']", namespaces=self.NS)
+            offer_elem = self._get_or_create_offer_elem(root, sku=sku)
 
-            if offer_elem is not None:
-                availabilities_elem = offer_elem.find(
-                    "ns:availabilities", namespaces=self.NS
-                )
+            availabilities_elem = offer_elem.find(
+                "ns:availabilities", namespaces=self.NS
+            )
+            self._get_or_create_availability_elem(
+                availabilities_elem, data.store_id, "yes"
+            )
 
-                if (
-                    availabilities_elem.find(
-                        f"ns:availability[@storeId='{data.store_id}']",
-                        namespaces=self.NS,
-                    )
-                    is None
-                ):
-                    self.create_element(
-                        "availability",
-                        availabilities_elem,
-                        storeId=data.store_id,
-                        available="yes",
-                    )
         return root
 
     def set_city_prices_xml(self, root: "Element", data: "SetOfferPriceSchema"):
-        offer_elem = root.find(
-            f".//ns:offer[@sku='{data.offer.sku}']", namespaces=self.NS
-        )
+        offer_elem = self._get_or_create_offer_elem(root, sku=data.offer.sku)
 
         if data.offer.price:
             self._handle_price_existence_logic_in_set_city_prices_xml(
@@ -190,7 +201,9 @@ class XMLService:
         if price_elem is not None:
             price_elem.text = str(data.price)
         else:
-            price_elem = self.create_element("price", offer_elem).text = str(data.price)
+            price_elem = self._create_element("price", offer_elem).text = str(
+                data.price
+            )
 
         return price_elem
 
@@ -210,26 +223,28 @@ class XMLService:
     def set_store_availability_xml(
         self, root: "Element", data: "SetStoreAvailabilitySchema"
     ):
-        offer_elem = root.find(f".//ns:offer[@sku='{data.sku}']", namespaces=self.NS)
+        offer_elem = self._get_or_create_offer_elem(root, sku=data.sku)
         availabilities_elem = offer_elem.find("ns:availabilities", namespaces=self.NS)
-        existing_availability_elem = availabilities_elem.find(
-            f"ns:availability[@storeId='{data.store_id}']", namespaces=self.NS
+
+        availability_elem = self._get_or_create_availability_elem(
+            availabilities_elem, data.store_id, available="yes"
         )
+        if not data.available:
+            availabilities_elem.remove(availability_elem)
 
-        if existing_availability_elem is None:
-            # self.create_element(
-            #     "availability",
-            #     availabilities_elem,
-            #     storeId=data.store_id,
-            #     available="yes",
-            # )
-            logging.warning(f"Store with {data.store_id} is NOT FOUND")
-            return root
+        return root
 
-        if data.available:
-            existing_availability_elem.set("available", "yes")
-        else:
-            existing_availability_elem.remove(existing_availability_elem)
+    def add_stores_to_offer_xml(self, root: "Element", data: "AddStoresToOfferSchema"):
+        offer_elem = self._get_or_create_offer_elem(root, sku=data.sku)
+        availabilities_elem = offer_elem.find("ns:availabilities", namespaces=self.NS)
+
+        for availability_data in data.availabilities:
+            availability_elem = self._get_or_create_availability_elem(
+                availabilities_elem, availability_data.store_id, available="yes"
+            )
+
+            if not availability_data.available:
+                availabilities_elem.remove(availability_elem)
 
         return root
 

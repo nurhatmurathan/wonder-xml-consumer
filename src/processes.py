@@ -10,6 +10,7 @@ from src.schemas import (
     EnablePickupSchema,
     SetOfferPriceSchema,
     SetStoreAvailabilitySchema,
+    AddStoresToOfferSchema,
 )
 from src.exceptions_handler import process_exception_handler
 from src.config import settings
@@ -121,4 +122,10 @@ class XMLMessageProcessor:
             message,
             SetStoreAvailabilitySchema,
             self.xml_service.set_store_availability_xml,
+        )
+
+    @process_exception_handler
+    async def process_add_stores_to_offer_xml_message(self, message: "IncomingMessage"):
+        await self.process_xml_message(
+            message, AddStoresToOfferSchema, self.xml_service.add_stores_to_offer_xml
         )

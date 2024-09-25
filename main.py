@@ -29,6 +29,7 @@ async def main() -> None:
         settings.MQ_ENABLE_PICKUP_POINT_XML_QUEUE: xml_processor.process_enable_pickup_point_xml_message,
         settings.MQ_SET_CITY_PRICES_XML_QUEUE: xml_processor.process_set_city_prices_xml_message,
         settings.MQ_SET_STORE_AVAILABILITY_XML_QUEUE: xml_processor.process_set_store_availability_xml_message,
+        settings.MQ_ADD_STORES_TO_OFFER_XML_QUEUE:  xml_processor.process_add_stores_to_offer_xml_message
     }
 
     consumer_tasks = [

@@ -63,3 +63,9 @@ class SetStoreAvailabilitySchema(BaseModel):
     sku: str
     store_id: str
     available: bool
+
+
+class AddStoresToOfferSchema(BaseModel):
+    merchant_id: str
+    sku: str
+    availabilities: List[OfferAvailabilitySchema]
