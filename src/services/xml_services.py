@@ -1,14 +1,9 @@
 import logging
 import time
 from typing import TYPE_CHECKING, Optional, List
-from lxml.etree import (
-    fromstring,
-    XMLParser,
-    tostring,
-)
+from lxml.etree import fromstring, XMLParser, tostring, Element
 
 if TYPE_CHECKING:
-    from lxml.etree import Element
     from src.schemas import (
         CreateUserSchema,
         AddNewOffersSchema,
@@ -118,11 +113,12 @@ class XMLService:
     ):
         availabilities_elem = self._create_element("availabilities", offer_elem)
         for availability_data in data:
-            self._get_or_create_availability_elem(
-                availabilities_elem,
-                availability_data.store_id,
-                "yes" if availability_data.available else "no",
-            )
+            if availability_data.available:
+                self._get_or_create_availability_elem(
+                    availabilities_elem,
+                    availability_data.store_id,
+                    available="yes",
+                )
 
     def _add_city_prices(
         self, offer_elem: "Element", data: List["OfferCityPriceSchema"]

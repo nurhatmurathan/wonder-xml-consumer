@@ -6,7 +6,7 @@ from src.config import settings
 
 class GCPUploadService:
     def __init__(self):
-        self.bucket_name = settings.PROD_GCP_BUCKET_NAME
+        self.bucket_name = settings.GCP_BUCKET_NAME
         self.gcp_endpoint_url = settings.GCP_ENDPOINT_URL
         self.client = settings.get_boto3_client
 

@@ -2,8 +2,9 @@ import logging
 
 import boto3
 from botocore.client import Config
-from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,12 +15,7 @@ class Settings(BaseSettings):
     RMQ_USER: str
     RMQ_PASSWORD: str
     MQ_EXCHANGE: str
-    PROD_GCP_BUCKET_NAME: str
-    DEV_GCP_BUCKET_NAME: str
-    GCP_BUCKET_REGION: str
-    GCP_ACCESS_KEY_ID: str
-    GCP_SECRET_ACCESS_KEY: str
-    GCP_ENDPOINT_URL: str
+    MQ_MESSAGE_MAX_RETRIES_COUNT: int
     MQ_CREATE_USER_XML_QUEUE: str
     MQ_ADD_NEW_OFFER_TO_XML_QUEUE: str
     MQ_DELETE_OFFER_XML_QUEUE: str
@@ -28,6 +24,11 @@ class Settings(BaseSettings):
     MQ_SET_CITY_PRICES_XML_QUEUE: str
     MQ_SET_STORE_AVAILABILITY_XML_QUEUE: str
     MQ_ADD_STORES_TO_OFFER_XML_QUEUE: str
+    GCP_BUCKET_NAME: str
+    GCP_BUCKET_REGION: str
+    GCP_ACCESS_KEY_ID: str
+    GCP_SECRET_ACCESS_KEY: str
+    GCP_ENDPOINT_URL: str
     GCP_STORAGE_XML_FILE_PATH: str
 
     @property
@@ -53,7 +54,7 @@ class Settings(BaseSettings):
             format="[%(asctime)s.%(msecs)03d] %(funcName)20s %(module)s:%(lineno)d %(levelname)-8s - %(message)s",
         )
 
-    model_config = SettingsConfigDict(env_file="../.env.local")
+    model_config = SettingsConfigDict(env_file=".env.local")
 
 
 settings = Settings()
