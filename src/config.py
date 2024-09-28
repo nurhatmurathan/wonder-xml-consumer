@@ -54,7 +54,7 @@ class Settings(BaseSettings):
             format="[%(asctime)s.%(msecs)03d] %(funcName)20s %(module)s:%(lineno)d %(levelname)-8s - %(message)s",
         )
 
-    model_config = SettingsConfigDict(env_file=".env.local")
+    model_config = SettingsConfigDict(env_file=".env.prod")
 
 
 settings = Settings()
