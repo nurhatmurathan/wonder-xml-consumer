@@ -32,8 +32,10 @@ class XMLMessageProcessor:
         xml_operation: Callable[["Element", "Any"], "Element"],
     ) -> None:
         logging.info(f"Processing START {xml_operation}")
+        
 
         payload = body.decode()
+        logging.info(f"Processing START PAYLOAD {payload}")
         logging.info(f"Step 1 | Processing import")
 
         data = schema_class.model_validate_json(payload)
